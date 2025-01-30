@@ -5,28 +5,79 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"sync/atomic"
 )
 
 type Airplane struct {
-	Seats 			[]bool // Seats[i] is true if seat i is booked, false otherwise
-	NumSeatsBooked	atomic.Int32
+	Seats SeatsConfinement
 }
 
 func (a *Airplane) MakeAirplane(numSeats int) {
-	a.Seats = make([]bool, numSeats)
+	a.Seats = MakeSeatsConfinement(numSeats)
 }
 
-func (a *Airplane) BookSeat() {
-	// Iterates through Seats and books the first available seat
-	for i := 0; i < len(a.Seats); i++ {
-		if !a.Seats[i] {
-			a.Seats[i] = true
-			fmt.Printf("Seat %d booked\n", i)
-			a.NumSeatsBooked.Add(1)
-			return
-		}
+func (a *Airplane) BookSeat() bool {
+	return a.Seats.BookSeat()
+}
+
+type SeatsConfinement struct {
+	bookSeatChan 		chan<- any
+	bookSeatSuccessChan <-chan bool
+	numSeatsBookedChan 	<-chan int
+	termination 		chan any
+}
+
+func (s SeatsConfinement) BookSeat() bool {
+	s.bookSeatChan <- struct{}{}
+	return <-s.bookSeatSuccessChan
+}
+
+func (s SeatsConfinement) GetNumSeatsBooked() int {
+	return <-s.numSeatsBookedChan
+}
+
+func (s SeatsConfinement) Done() {
+	close(s.termination)
+}
+
+func MakeSeatsConfinement(numSeats int) SeatsConfinement {
+	bookSeatChan 		:= make(chan any)
+	bookSeatSuccessChan := make(chan bool)
+	numSeatsBookedChan 	:= make(chan int)
+	termination 		:= make(chan any)
+
+	s := SeatsConfinement{
+		bookSeatChan: bookSeatChan,
+		bookSeatSuccessChan: bookSeatSuccessChan,
+		numSeatsBookedChan: numSeatsBookedChan,
+		termination: termination,
 	}
+
+	go func() {
+		seats := make([]bool, numSeats)
+		numSeatsBooked := 0
+		for {
+			select {
+			case <-bookSeatChan:
+				// Iterates through Seats and books the first available seat
+				success := false
+				for i := 0; i < len(seats); i++ {
+					if !seats[i] {
+						seats[i] = true
+						fmt.Printf("Seat %d booked\n", i)
+						numSeatsBooked++
+						success = true
+						break
+					}
+				}
+				bookSeatSuccessChan <- success
+			case numSeatsBookedChan <- numSeatsBooked: 
+			case <-termination:
+				return
+			}
+		}
+	} ()
+
+	return s
 }
 
 func main() {
@@ -56,8 +107,9 @@ func main() {
 	}
 
 	bookingWG.Wait()
-
+	
 	// To consistently expose race condition, use 1000 seats and 10000 customers
-	fmt.Printf("Number of seats on airplane: %d\n", len(a.Seats))
-	fmt.Printf("Number of seats booked: %d\n", a.NumSeatsBooked.Load())
+	fmt.Printf("Number of seats on airplane: %d\n", numSeats)
+	fmt.Printf("Number of seats booked: %d\n", a.Seats.GetNumSeatsBooked())
+	a.Seats.Done()
 }
