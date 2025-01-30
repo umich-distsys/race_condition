@@ -17,16 +17,17 @@ func (a *Airplane) MakeAirplane(numSeats int) {
 	a.Seats = make([]bool, numSeats)
 }
 
-func (a *Airplane) BookSeat() {
+func (a *Airplane) BookSeat() bool {
 	// Iterates through Seats and books the first available seat
 	for i := 0; i < len(a.Seats); i++ {
 		if !a.Seats[i] {
 			a.Seats[i] = true
 			fmt.Printf("Seat %d booked\n", i)
 			a.NumSeatsBooked.Add(1)
-			return
+			return true
 		}
 	}
+	return false
 }
 
 func main() {
