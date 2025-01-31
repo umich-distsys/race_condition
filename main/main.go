@@ -22,6 +22,16 @@ func (a *Airplane) GetNumSeatsBooked() int {
 	return a.NumSeatsBooked.Current()
 }
 
+func (a *Airplane) CountBookingArray() int {
+	var x int
+	for _, val := range a.Seats {
+		if val {
+			x += 1
+		}
+	}
+	return x
+}
+
 func (a *Airplane) BookSeat() bool {
 	// Iterates through Seats and books the first available seat
 	for i := 0; i < len(a.Seats); i++ {
@@ -63,6 +73,7 @@ func main() {
 
 	bookingWG.Wait()
 
-	fmt.Printf("Number of seats on airplane: %d\n", numSeats)
-	fmt.Printf("Number of seats booked: %d\n", a.GetNumSeatsBooked())
+	fmt.Printf("Number of seats on airplane:\t%d\n", numSeats)
+	fmt.Printf("Number of exposed bookings:\t%d\n", a.GetNumSeatsBooked())
+	fmt.Printf("Number of actual bookings:\t%d\n", a.CountBookingArray())
 }
