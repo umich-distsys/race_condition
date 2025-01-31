@@ -5,16 +5,21 @@ import (
 	"os"
 	"strconv"
 	"sync"
-	"sync/atomic"
+	"umich.edu/eecs491/d4/race_condition/value"
 )
 
 type Airplane struct {
 	Seats 			[]bool // Seats[i] is true if seat i is booked, false otherwise
-	NumSeatsBooked	atomic.Int32
+	NumSeatsBooked	value.Value // Value confinement from lecture      
 }
 
 func (a *Airplane) MakeAirplane(numSeats int) {
 	a.Seats = make([]bool, numSeats)
+	a.NumSeatsBooked = value.MakeValue()
+}
+
+func (a *Airplane) GetNumSeatsBooked() int {
+	return a.NumSeatsBooked.Current()
 }
 
 func (a *Airplane) BookSeat() bool {
@@ -59,6 +64,6 @@ func main() {
 	bookingWG.Wait()
 
 	// To consistently expose race condition, use 1000 seats and 10000 customers
-	fmt.Printf("Number of seats on airplane: %d\n", len(a.Seats))
-	fmt.Printf("Number of seats booked: %d\n", a.NumSeatsBooked.Load())
+	fmt.Printf("Number of seats on airplane: %d\n", numSeats)
+	fmt.Printf("Number of seats booked: %d\n", a.GetNumSeatsBooked())
 }
