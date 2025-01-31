@@ -63,7 +63,6 @@ func main() {
 
 	bookingWG.Wait()
 
-	// To consistently expose race condition, use 1000 seats and 10000 customers
 	fmt.Printf("Number of seats on airplane: %d\n", numSeats)
 	fmt.Printf("Number of seats booked: %d\n", a.GetNumSeatsBooked())
 }
