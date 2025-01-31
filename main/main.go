@@ -19,6 +19,10 @@ func (a *Airplane) BookSeat() bool {
 	return a.Seats.BookSeat()
 }
 
+func (a *Airplane) GetNumSeatsBooked() int {
+	return a.Seats.GetNumSeatsBooked()
+}
+
 type SeatsConfinement struct {
 	bookSeatChan 		chan<- any
 	bookSeatSuccessChan <-chan bool
@@ -108,8 +112,7 @@ func main() {
 
 	bookingWG.Wait()
 	
-	// To consistently expose race condition, use 1000 seats and 10000 customers
 	fmt.Printf("Number of seats on airplane: %d\n", numSeats)
-	fmt.Printf("Number of seats booked: %d\n", a.Seats.GetNumSeatsBooked())
+	fmt.Printf("Number of seats booked: %d\n", a.GetNumSeatsBooked())
 	a.Seats.Done()
 }
